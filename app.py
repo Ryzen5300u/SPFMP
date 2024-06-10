@@ -7,7 +7,7 @@ import webbrowser
 app = Flask(__name__)
 
 # Load the YOLOv8 model
-model = YOLO(r'best.pt')
+model = YOLO(r'static/model/weights/best.pt')
 
 @app.route('/')
 def home():
