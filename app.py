@@ -2,12 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, Response
 from ultralytics import YOLO
 import os
 from PIL import Image
-import webbrowser
 
 app = Flask(__name__)
 
 # Load the YOLOv8 model
 model = YOLO(r'static/model/weights/best.pt')
+app.config['UPLOAD_EXTENSIONS']  = ['.jpg','.JPG','.jpeg', '.JPEG', '.png', '.PNG', '.heif', '.HEIF', '.heic', '.HEIC', '.webp', '.WEBP']
 
 @app.route('/')
 def home():
@@ -23,29 +23,32 @@ def readURL():
         file = request.files['image']
 
         # If the user does not select a file, the browser submits an empty file without a filename
-        if file.filename == '':
-            return redirect(request.url)
+        if file.filename != '':
 
-        if file:
-            # Save the uploaded image to a temporary location
-            image_path = "static/uploaded_image.jpg"
-            file.save(image_path)
+            image_ext = os.path.splitext(file.filename)[1]
 
-            # Run inference on the uploaded image
-            results = model(image_path)  # results list
+            if image_ext in app.config['UPLOAD_EXTENSIONS']:
+                # Save the uploaded image to a temporary location
+                image_path = "static/uploaded_image.jpg"
+                file.save(image_path)
 
-            # Visualize the results
-            for i, r in enumerate(results):
-                # Plot results image
-                im_bgr = r.plot()  # BGR-order numpy array
-                im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
+                # Run inference on the uploaded image
+                results = model(image_path)  # results list
 
-                # Save the result image
-                result_image_path = "static/result_image.jpg"
-                im_rgb.save(result_image_path)
+                # Visualize the results
+                for i, r in enumerate(results):
+                    # Plot results image
+                    im_bgr = r.plot()  # BGR-order numpy array
+                    im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
 
-            # Remove the uploaded image
-            os.remove(image_path)
+                    # Save the result image
+                    result_image_path = "static/result_image.jpg"
+                    im_rgb.save(result_image_path)
+                
+                os.remove(image_path)
+
+            else:
+                result_image_path="static/error_image.jpeg"
 
             # Render the HTML template with the result image path
             return render_template('index.html', image_path=result_image_path)
